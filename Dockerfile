@@ -28,8 +28,6 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder /app/.next/standalone ./
 # Copy the static assets
 COPY --from=builder /app/.next/static ./.next/static
-# Copy the public assets
-COPY --from=builder /app/public ./public
 
 # Set the correct user
 USER nextjs
