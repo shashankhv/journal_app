@@ -60,7 +60,6 @@ function Header() {
             <NavLink href="/day" label="Hourly View" />
             <NavLink href="/entries/new" label="New Entry" />
             <NavLink href="/export" label="Export" />
-            <NavLink href="/migrate" label="Migrate" />
           </nav>
         </div>
       </div>

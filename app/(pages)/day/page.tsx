@@ -29,13 +29,14 @@ function DayPageContent() {
     year: "numeric",
     day: "2-digit",
   });
+  const isoDate = date.toISOString().slice(0, 10);
   console.log(displayDate);
   const load = useCallback(async () => {
-    const day = await getDay(displayDate);
+    const day = await getDay(isoDate);
     setEntries({ ...day });
     setEditing({});
     setDirty({});
-  }, [displayDate]);
+  }, [isoDate]);
 
   useEffect(() => {
     load();
@@ -82,7 +83,7 @@ function DayPageContent() {
       .map((h) => ({ hour: Number(h), text: entries[Number(h)] || "" }));
     if (!changed.length) return;
     setSaving(true);
-    await setMany(displayDate, changed);
+    await setMany(isoDate, changed);
     setDirty({});
     setSaving(false);
   }
