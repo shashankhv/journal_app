@@ -67,7 +67,7 @@ function DayPageContent() {
 
   function replaceUrl(d: Date) {
     const iso = d.toISOString().slice(0, 10);
-    router.replace(`/day?date=${iso}`);
+    router.replace(`/dashboard/day?date=${iso}`);
   }
 
   function startEdit(h: number) {
@@ -130,7 +130,7 @@ function DayPageContent() {
             Cancel
           </a>
 
-          <a href="/entries/new" className="px-4 py-2 border rounded">
+          <a href="/dashboard/entries/new" className="px-4 py-2 border rounded">
             New Entry
           </a>
         </div>
@@ -205,7 +205,9 @@ function DayPageContent() {
 
 export default function DayPage() {
   return (
-    <Suspense fallback={<div className="max-w-5xl mx-auto px-4 py-8">Loading...</div>}>
+    <Suspense
+      fallback={<div className="max-w-5xl mx-auto px-4 py-8">Loading...</div>}
+    >
       <DayPageContent />
     </Suspense>
   );

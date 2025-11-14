@@ -98,7 +98,7 @@ export default function Calendar() {
   }
 
   function handleDayClick(dateString: string) {
-    router.push(`/day?date=${dateString}`);
+    router.push(`/dashboard/day?date=${dateString}`);
   }
 
   const monthYearLabel = currentDate.toLocaleDateString(undefined, {
@@ -150,7 +150,7 @@ function CalendarHeader({
           Today
         </button>
       </div>
-      <a href="/day" className="px-4 py-2 border rounded">
+      <a href="/dashboard/day" className="px-4 py-2 border rounded">
         Day View
       </a>
     </div>
