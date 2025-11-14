@@ -39,3 +39,6 @@ journal.db
 journal.db-journal
 journal.db-wal
 journal.db-shm
+
+# clerk configuration (can include secrets)
+/.clerk/

@@ -29,13 +29,14 @@ function DayPageContent() {
     year: "numeric",
     day: "2-digit",
   });
+  const isoDate = date.toISOString().slice(0, 10);
   console.log(displayDate);
   const load = useCallback(async () => {
-    const day = await getDay(displayDate);
+    const day = await getDay(isoDate);
     setEntries({ ...day });
     setEditing({});
     setDirty({});
-  }, [displayDate]);
+  }, [isoDate]);
 
   useEffect(() => {
     load();
@@ -66,7 +67,7 @@ function DayPageContent() {
 
   function replaceUrl(d: Date) {
     const iso = d.toISOString().slice(0, 10);
-    router.replace(`/day?date=${iso}`);
+    router.replace(`/dashboard/day?date=${iso}`);
   }
 
   function startEdit(h: number) {
@@ -82,7 +83,7 @@ function DayPageContent() {
       .map((h) => ({ hour: Number(h), text: entries[Number(h)] || "" }));
     if (!changed.length) return;
     setSaving(true);
-    await setMany(displayDate, changed);
+    await setMany(isoDate, changed);
     setDirty({});
     setSaving(false);
   }
@@ -129,7 +130,7 @@ function DayPageContent() {
             Cancel
           </a>
 
-          <a href="/entries/new" className="px-4 py-2 border rounded">
+          <a href="/dashboard/entries/new" className="px-4 py-2 border rounded">
             New Entry
           </a>
         </div>
@@ -204,7 +205,9 @@ function DayPageContent() {
 
 export default function DayPage() {
   return (
-    <Suspense fallback={<div className="max-w-5xl mx-auto px-4 py-8">Loading...</div>}>
+    <Suspense
+      fallback={<div className="max-w-5xl mx-auto px-4 py-8">Loading...</div>}
+    >
       <DayPageContent />
     </Suspense>
   );

@@ -15,7 +15,7 @@ export default function NewEntryPage() {
     const hNum = Number(hour);
     if (isNaN(hNum) || hNum < 0 || hNum > 23) return;
     await setHourStorage(date, hNum, text);
-    router.push(`/day?date=${date}`);
+    router.push(`/dashboard/day?date=${date}`);
   }
 
   return (
