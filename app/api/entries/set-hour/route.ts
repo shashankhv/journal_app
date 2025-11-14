@@ -14,11 +14,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = getCurrentUserId();
+    const userId = await getCurrentUserId();
     await setHourEntry(userId, date, hour, text || "");
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to set hour entry:", error);
+    if (error instanceof Error && error.message === "User not authenticated") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json(
       { error: "Failed to set entry" },
       { status: 500 }

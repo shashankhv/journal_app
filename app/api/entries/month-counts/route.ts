@@ -15,11 +15,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const userId = getCurrentUserId();
+    const userId = await getCurrentUserId();
     const counts = await getMonthCounts(userId, parseInt(year), parseInt(month));
     return NextResponse.json(counts);
   } catch (error) {
     console.error("Failed to get month counts:", error);
+    if (error instanceof Error && error.message === "User not authenticated") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json(
       { error: "Failed to fetch month counts" },
       { status: 500 }

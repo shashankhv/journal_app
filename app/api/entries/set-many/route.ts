@@ -14,11 +14,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = getCurrentUserId();
+    const userId = await getCurrentUserId();
+    console.log("ashdjkf;jhasdjkf,", userId);
     await setManyEntries(userId, date, entries);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to set many entries:", error);
+    if (error instanceof Error && error.message === "User not authenticated") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json(
       { error: "Failed to set entries" },
       { status: 500 }

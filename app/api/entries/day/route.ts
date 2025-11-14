@@ -11,11 +11,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const userId = getCurrentUserId();
+    const userId = await getCurrentUserId();
     const entries = await getDay(userId, date);
     return NextResponse.json(entries);
   } catch (error) {
     console.error("Failed to get day entries:", error);
+    if (error instanceof Error && error.message === "User not authenticated") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json(
       { error: "Failed to fetch entries for date" },
       { status: 500 }
