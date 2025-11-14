@@ -1,6 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useState, Suspense } from "react";
-import { getDay, setMany } from "../../../components/storage";
+import { getDay, setMany } from "@/components/storage";
 import { useSearchParams, useRouter } from "next/navigation";
 
 interface HourState {

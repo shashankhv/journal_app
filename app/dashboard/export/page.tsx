@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { exportRange } from "../../../components/storage";
+import { exportRange } from "@/components/storage";
 
 export default function ExportPage() {
   const today = new Date().toISOString().slice(0, 10);

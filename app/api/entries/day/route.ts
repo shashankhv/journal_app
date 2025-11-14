@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDay } from "../../../../lib/db";
+import { getDay } from "@/lib/db";
+import { getCurrentUserId } from "@/lib/current-user";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -10,7 +11,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const entries = await getDay(date);
+    const userId = getCurrentUserId();
+    const entries = await getDay(userId, date);
     return NextResponse.json(entries);
   } catch (error) {
     console.error("Failed to get day entries:", error);

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { setHourStorage } from "../../../../components/storage";
+import { setHourStorage } from "@/components/storage";
 import { useRouter } from "next/navigation";
 
 export default function NewEntryPage() {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { setManyEntries } from "../../../../lib/db";
+import { setManyEntries } from "@/lib/db";
+import { getCurrentUserId } from "@/lib/current-user";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +14,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await setManyEntries(date, entries);
+    const userId = getCurrentUserId();
+    await setManyEntries(userId, date, entries);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to set many entries:", error);

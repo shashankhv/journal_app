@@ -6,6 +6,7 @@ let db: Db | null = null;
 // MongoDB Collections
 interface HourlyEntry {
   _id?: any;
+  userId: string;
   date: string;
   hour: number;
   text: string;
@@ -15,6 +16,7 @@ interface HourlyEntry {
 
 interface DailyAggregation {
   _id?: any;
+  userId: string;
   date: string;
   totalEntries: number;
   entries: { [hour: number]: string };
@@ -24,6 +26,7 @@ interface DailyAggregation {
 
 interface WeeklyAggregation {
   _id?: any;
+  userId: string;
   year: number;
   week: number;
   startDate: string;
@@ -36,6 +39,7 @@ interface WeeklyAggregation {
 
 interface MonthlyAggregation {
   _id?: any;
+  userId: string;
   year: number;
   month: number;
   totalEntries: number;
@@ -67,14 +71,13 @@ async function createIndexes() {
   const monthlyAggs = db.collection<MonthlyAggregation>("monthly_aggregations");
 
   // Create compound index for entries (unique on date + hour)
-  await entries.createIndex({ date: 1, hour: 1 }, { unique: true });
-  await entries.createIndex({ date: 1 });
-  await entries.createIndex({ createdAt: 1 });
+  await entries.createIndex({ userId: 1, date: 1, hour: 1 }, { unique: true });
+  await entries.createIndex({ userId: 1, date: 1 });
+  await entries.createIndex({ userId: 1, createdAt: 1 });
 
-  // Create indexes for aggregations
-  await dailyAggs.createIndex({ date: 1 }, { unique: true });
-  await weeklyAggs.createIndex({ year: 1, week: 1 }, { unique: true });
-  await monthlyAggs.createIndex({ year: 1, month: 1 }, { unique: true });
+  await dailyAggs.createIndex({ userId: 1, date: 1 }, { unique: true });
+  await weeklyAggs.createIndex({ userId: 1, year: 1, week: 1 }, { unique: true });
+  await monthlyAggs.createIndex({ userId: 1, year: 1, month: 1 }, { unique: true });
 }
 
 export interface Entry {
@@ -84,12 +87,13 @@ export interface Entry {
 }
 
 export async function getDay(
+  userId: string,
   date: string
 ): Promise<{ [hour: number]: string }> {
   const database = await getDb();
   const entries = database.collection<HourlyEntry>("entries");
 
-  const docs = await entries.find({ date }).toArray();
+  const docs = await entries.find({ userId, date }).toArray();
   const result: { [hour: number]: string } = {};
 
   for (const doc of docs) {
@@ -99,14 +103,15 @@ export async function getDay(
   return result;
 }
 
-export async function setHourEntry(date: string, hour: number, text: string) {
+export async function setHourEntry(userId: string, date: string, hour: number, text: string) {
   const database = await getDb();
   const entries = database.collection<HourlyEntry>("entries");
 
   if (text) {
     await entries.replaceOne(
-      { date, hour },
+      { userId, date, hour },
       {
+        userId,
         date,
         hour,
         text,
@@ -116,14 +121,14 @@ export async function setHourEntry(date: string, hour: number, text: string) {
       { upsert: true }
     );
   } else {
-    await entries.deleteOne({ date, hour });
+    await entries.deleteOne({ userId, date, hour });
   }
 
-  // Trigger background aggregation for this date
-  await updateDailyAggregation(date);
+  await updateDailyAggregation(userId, date);
 }
 
 export async function setManyEntries(
+  userId: string,
   date: string,
   entries: { hour: number; text: string }[]
 ) {
@@ -134,8 +139,9 @@ export async function setManyEntries(
     if (entry.text) {
       return {
         replaceOne: {
-          filter: { date, hour: entry.hour },
+          filter: { userId, date, hour: entry.hour },
           replacement: {
+            userId,
             date,
             hour: entry.hour,
             text: entry.text,
@@ -148,7 +154,7 @@ export async function setManyEntries(
     } else {
       return {
         deleteOne: {
-          filter: { date, hour: entry.hour },
+          filter: { userId, date, hour: entry.hour },
         },
       };
     }
@@ -158,21 +164,20 @@ export async function setManyEntries(
     await collection.bulkWrite(operations);
   }
 
-  // Trigger background aggregation for this date
-  await updateDailyAggregation(date);
+  await updateDailyAggregation(userId, date);
 }
 
 export async function getMonthCounts(
+  userId: string,
   year: number,
   month: number
 ): Promise<{ [date: string]: number }> {
-  // Check if we have monthly aggregation first
   const database = await getDb();
   const monthlyAggs = database.collection<MonthlyAggregation>(
     "monthly_aggregations"
   );
 
-  const monthlyAgg = await monthlyAggs.findOne({ year, month });
+  const monthlyAgg = await monthlyAggs.findOne({ userId, year, month });
   if (monthlyAgg) {
     const result: { [date: string]: number } = {};
     for (const dailyEntry of monthlyAgg.dailyEntries) {
@@ -181,7 +186,6 @@ export async function getMonthCounts(
     return result;
   }
 
-  // Fallback to real-time aggregation
   const entries = database.collection<HourlyEntry>("entries");
   const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
   const endDate = `${year}-${String(month).padStart(2, "0")}-31`;
@@ -189,6 +193,7 @@ export async function getMonthCounts(
   const pipeline = [
     {
       $match: {
+        userId,
         date: { $gte: startDate, $lte: endDate },
       },
     },
@@ -210,13 +215,13 @@ export async function getMonthCounts(
   return result;
 }
 
-export async function getAllEntries(): Promise<{
+export async function getAllEntries(userId: string): Promise<{
   [date: string]: { [hour: number]: string };
 }> {
   const database = await getDb();
   const entries = database.collection<HourlyEntry>("entries");
 
-  const docs = await entries.find({}).sort({ date: 1, hour: 1 }).toArray();
+  const docs = await entries.find({ userId }).sort({ date: 1, hour: 1 }).toArray();
   const result: { [date: string]: { [hour: number]: string } } = {};
 
   for (const doc of docs) {
@@ -230,13 +235,12 @@ export async function getAllEntries(): Promise<{
 }
 
 // Background aggregation functions
-async function updateDailyAggregation(date: string) {
+async function updateDailyAggregation(userId: string, date: string) {
   const database = await getDb();
   const entries = database.collection<HourlyEntry>("entries");
   const dailyAggs = database.collection<DailyAggregation>("daily_aggregations");
 
-  // Get all entries for this date
-  const dayEntries = await entries.find({ date }).toArray();
+  const dayEntries = await entries.find({ userId, date }).toArray();
   const entriesMap: { [hour: number]: string } = {};
 
   for (const entry of dayEntries) {
@@ -245,8 +249,9 @@ async function updateDailyAggregation(date: string) {
 
   if (dayEntries.length > 0) {
     await dailyAggs.replaceOne(
-      { date },
+      { userId, date },
       {
+        userId,
         date,
         totalEntries: dayEntries.length,
         entries: entriesMap,
@@ -256,15 +261,14 @@ async function updateDailyAggregation(date: string) {
       { upsert: true }
     );
   } else {
-    await dailyAggs.deleteOne({ date });
+    await dailyAggs.deleteOne({ userId, date });
   }
 
-  // Trigger weekly and monthly aggregations
-  await updateWeeklyAggregation(date);
-  await updateMonthlyAggregation(date);
+  await updateWeeklyAggregation(userId, date);
+  await updateMonthlyAggregation(userId, date);
 }
 
-async function updateWeeklyAggregation(date: string) {
+async function updateWeeklyAggregation(userId: string, date: string) {
   const database = await getDb();
   const dailyAggs = database.collection<DailyAggregation>("daily_aggregations");
   const weeklyAggs = database.collection<WeeklyAggregation>(
@@ -275,12 +279,11 @@ async function updateWeeklyAggregation(date: string) {
   const year = dateObj.getFullYear();
   const week = getWeekNumber(dateObj);
 
-  // Get week start and end dates
   const { startDate, endDate } = getWeekDates(year, week);
 
-  // Get daily aggregations for this week
   const weeklyDailies = await dailyAggs
     .find({
+      userId,
       date: { $gte: startDate, $lte: endDate },
     })
     .toArray();
@@ -297,8 +300,9 @@ async function updateWeeklyAggregation(date: string) {
 
   if (totalEntries > 0) {
     await weeklyAggs.replaceOne(
-      { year, week },
+      { userId, year, week },
       {
+        userId,
         year,
         week,
         startDate,
@@ -311,11 +315,11 @@ async function updateWeeklyAggregation(date: string) {
       { upsert: true }
     );
   } else {
-    await weeklyAggs.deleteOne({ year, week });
+    await weeklyAggs.deleteOne({ userId, year, week });
   }
 }
 
-async function updateMonthlyAggregation(date: string) {
+async function updateMonthlyAggregation(userId: string, date: string) {
   const database = await getDb();
   const dailyAggs = database.collection<DailyAggregation>("daily_aggregations");
   const monthlyAggs = database.collection<MonthlyAggregation>(
@@ -326,12 +330,12 @@ async function updateMonthlyAggregation(date: string) {
   const year = dateObj.getFullYear();
   const month = dateObj.getMonth() + 1;
 
-  // Get daily aggregations for this month
   const monthStart = `${year}-${String(month).padStart(2, "0")}-01`;
   const monthEnd = `${year}-${String(month).padStart(2, "0")}-31`;
 
   const monthlyDailies = await dailyAggs
     .find({
+      userId,
       date: { $gte: monthStart, $lte: monthEnd },
     })
     .toArray();
@@ -348,8 +352,9 @@ async function updateMonthlyAggregation(date: string) {
 
   if (totalEntries > 0) {
     await monthlyAggs.replaceOne(
-      { year, month },
+      { userId, year, month },
       {
+        userId,
         year,
         month,
         totalEntries,
@@ -360,7 +365,7 @@ async function updateMonthlyAggregation(date: string) {
       { upsert: true }
     );
   } else {
-    await monthlyAggs.deleteOne({ year, month });
+    await monthlyAggs.deleteOne({ userId, year, month });
   }
 }
 

@@ -1,7 +1,7 @@
 import "../globals.css";
 import React from "react";
 import Link from "next/link";
-import NavLink from "../../components/NavLink";
+import NavLink from "@/components/NavLink";
 
 export default function PagesLayout({
   children,
