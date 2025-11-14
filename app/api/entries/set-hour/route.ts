@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { setHourEntry } from "../../../../lib/db";
+import { setHourEntry } from "@/lib/db";
+import { getCurrentUserId } from "@/lib/current-user";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +14,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await setHourEntry(date, hour, text || "");
+    const userId = getCurrentUserId();
+    await setHourEntry(userId, date, hour, text || "");
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to set hour entry:", error);
