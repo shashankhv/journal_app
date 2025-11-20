@@ -1,3 +1,11 @@
+import { auth } from "@clerk/nextjs/server";
+
 export async function getCurrentUserId(): Promise<string> {
-  return "user123";
+  const { userId } = await auth();
+
+  if (typeof userId === "string") {
+    return userId;
+  }
+
+  return "Default_user";
 }

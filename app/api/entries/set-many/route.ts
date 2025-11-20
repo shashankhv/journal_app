@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = await getCurrentUserId();
-    console.log("ashdjkf;jhasdjkf,", userId);
+
     await setManyEntries(userId, date, entries);
     return NextResponse.json({ success: true });
   } catch (error) {

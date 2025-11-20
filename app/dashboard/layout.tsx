@@ -3,6 +3,8 @@ import React from "react";
 import Link from "next/link";
 import NavLink from "@/components/NavLink";
 
+import { UserButton } from "@clerk/nextjs";
+
 export default function PagesLayout({
   children,
 }: {
@@ -41,12 +43,15 @@ function Header() {
               Hourly Journal
             </Link>
           </div>
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
-            <NavLink href="/dashboard" label="Dashboard" />
-            <NavLink href="/dashboard/day" label="Hourly View" />
-            <NavLink href="/dashboard/entries/new" label="New Entry" />
-            <NavLink href="/dashboard/export" label="Export" />
-          </nav>
+          <div className="flex items-center gap-8">
+            <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
+              <NavLink href="/dashboard" label="Dashboard" />
+              <NavLink href="/dashboard/day" label="Hourly View" />
+              <NavLink href="/dashboard/entries/new" label="New Entry" />
+              <NavLink href="/dashboard/export" label="Export" />
+            </nav>
+            <UserButton />
+          </div>
         </div>
       </div>
     </header>
